@@ -11,7 +11,7 @@ Import PCUICEnvironment.
 From MetaRocq.PCUIC Require Import BDStrengthening.
 From MetaRocq.PCUIC Require Import PCUICTactics.
 
-From Formalization Require Import Lemma Positivity_condition.
+From MetaRocq.NestedElim.Formalization Require Import Lemma Positivity_condition.
 Import ViewInductive.
 
 

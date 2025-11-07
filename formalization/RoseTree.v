@@ -1,4 +1,4 @@
-Require Import Nat.
+From Stdlib Require Import Nat.
 From Stdlib Require Import List.
 (* From Equations Require Import Equations.*)
 From Corelib.Lists Require Import ListDef.

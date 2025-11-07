@@ -10,5 +10,13 @@
     "**/.hg": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true
-  }
+  },
+  "coq-lsp.args": [
+      "-Q", "theories", "MetaRocq.NestedElim"
+
+  ],
+  "vsrocq.args": [
+      "-Q", "theories", "MetaRocq.NestedElim"
+
+  ]
 }

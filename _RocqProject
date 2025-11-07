@@ -1,5 +1,4 @@
 -arg "-w '-notation-overridden'" -Q ./theories MetaRocq.NestedElim -Q ./formalization MetaRocq.NestedElim.Formalization
-# -arg "-w '-notation-overridden'" -Q ./formalization formalization
 # -arg "-output-directory ."
 
 # Formalization

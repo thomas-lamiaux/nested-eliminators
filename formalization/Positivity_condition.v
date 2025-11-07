@@ -10,7 +10,7 @@ From MetaRocq.PCUIC Require Import PCUICSigmaCalculus PCUICInstConv.
 From MetaRocq.PCUIC Require Import BDStrengthening.
 Import PCUICEnvironment.
 
-From Formalization Require Import Lemma.
+From MetaRocq.NestedElim.Formalization Require Import Lemma.
 
 Ltac fast_done :=
   solve
