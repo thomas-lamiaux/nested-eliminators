@@ -1,13 +1,13 @@
--arg "-w '-notation-overridden'" -Q ./theories PluginNestedElim -Q ./examples examples
-# -arg "-w '-notation-overridden'" -Q ./examples examples
+-arg "-w '-notation-overridden'" -Q ./theories MetaRocq.NestedElim -Q ./formalization MetaRocq.NestedElim.Formalization
+# -arg "-w '-notation-overridden'" -Q ./formalization formalization
 # -arg "-output-directory ."
 
-# Examples
-examples/Lemma.v
-examples/Positivity_condition.v
-examples/Nested_to_mutual.v
-examples/RoseTree.v
-examples/typing.v
+# Formalization
+formalization/Lemma.v
+formalization/Positivity_condition.v
+formalization/Nested_to_mutual.v
+formalization/RoseTree.v
+formalization/typing.v
 
 # API
 theories/API/core.v
@@ -42,5 +42,5 @@ theories/SparseParametricity/local_fundamental_lemma.v
 
 # Tests
 theories/test_functions.v
-theories/examples_submission.v
+theories/formalization_submission.v
 
