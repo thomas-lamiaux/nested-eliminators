@@ -1,6 +1,6 @@
 From MetaRocq.NestedElim Require Export api_debruijn.
 
-From MetaRocq.Utils Require Export utils.
+From MetaRocq.Utils Require Export utils Show. 
 From MetaRocq.Template Require Export All.
 From MetaRocq.Template Require Import Pretty.
 
@@ -23,7 +23,8 @@ From MetaRocq.NestedElim Require Import local_fundamental_lemma.
 From MetaRocq.Utils Require Import monad_utils.
 Import MRMonadNotation.
 
-
+Instance show_globref : Show global_reference := string_of_gref.
+Instance show_kername : Show kername := string_of_kername.
 (* Definition preprocess_uparams : kername -> mutual_inductive_body -> global_env -> nat :=
   fun _ mdecl _ => 0.
 
@@ -48,28 +49,45 @@ Definition getKername (q : qualid) : TemplateMonad kername :=
   | _ => tmFail ("[" ^ q ^ "] is not an inductive")
   end.
 
-Definition getInd (q : qualid) : TemplateMonad mutual_inductive_body :=
-  kn <- tmLocate1 q ;;
-  match kn with
-  | IndRef ind => tmQuoteInductive ind.(inductive_mind)
-  | _ => tmFail ("[" ^ q ^ "] is not an inductive")
+Definition from_opt {A} (o : option A) e : TemplateMonad A :=
+  match o with
+  | Some x => ret x
+  | None => tmFail e
   end.
 
-Definition getCst (q : qualid) b : TemplateMonad constant_body :=
-  kn <- tmLocate1 q ;;
-  match kn with
-  | ConstRef kn => tmQuoteConstant kn b
-  | _ => tmFail ("[" ^ q ^ "] is not a constant")
-  end.
+Section EnvironmentAccess.
+  Context (Σ : global_env).
 
-Definition getCstBody (q : qualid) b : TemplateMonad (option term) :=
+  Definition ind_of_kn (kn : kername) :=
+    from_opt (lookup_minductive Σ kn) ("Could not find the inductive: " ^ show kn).
+
+  Definition ind_of_gref (kn : global_reference) : TemplateMonad mutual_inductive_body :=
+    match kn with
+    | IndRef ind => ind_of_kn ind.(inductive_mind)
+    | _ => tmFail ("[" ^ string_of_gref kn ^ "] is not an inductive")
+    end.
+
+  Definition getInd (q : qualid) : TemplateMonad mutual_inductive_body :=
+    kn <- tmLocate1 q ;; ind_of_gref kn.
+
+  Definition cst_of_kn kn := from_opt (lookup_constant Σ kn) ("Could not find the constant: " ^ show kn).
+
+  Definition cst_of_gref (kn : global_reference) : TemplateMonad _ :=
+    match kn with
+    | ConstRef kn => cst_of_kn kn
+    | _ => tmFail ("[" ^ show kn ^ "] is not a constant")
+    end.
+
+  Definition getCst (q : qualid) (b : bool) : TemplateMonad constant_body :=
+    kn <- tmLocate1 q ;; cst_of_gref kn.
+    
+  Definition getCstBody (q : qualid) b : TemplateMonad (option term) :=
+    x <- (getCst q b) ;;
+    tmEval all x.(cst_body).
+
+  Definition getCstType (q : qualid) b : TemplateMonad term :=
   x <- (getCst q b) ;;
-  tmEval all x.(cst_body).
-
-Definition getCstType (q : qualid) b : TemplateMonad term :=
-x <- (getCst q b) ;;
-tmEval all x.(cst_type).
-
+  tmEval all x.(cst_type).
 
 Definition printMdecl (q : qualid): TemplateMonad unit :=
   getInd q >>= tmPrint.
@@ -125,7 +143,7 @@ Definition get_paramEp {A} (s : A) Ep : TemplateMonad unit :=
   let ' (hd, iargs) := decompose_app etm in
   match hd with
   | tInd (mkInd kname ind_pos) _ =>
-    mdecl <- match lookup_inductive E {| inductive_mind := kname; inductive_ind := 0 |} with Some d => ret d.1 | None => tmFail "assert false" end;;
+    mdecl <- ind_of_kn kname;;
     nb_uparams <- tmEval cbv (preprocess_uparams kname mdecl E) ;;
     strpos <- tmEval cbv (preprocess_strpos kname mdecl nb_uparams E Ep) ;;
     type_uparams <- tmEval cbv (firstn nb_uparams (rev (map decl_type mdecl.(ind_params)))) ;;
@@ -162,6 +180,18 @@ Definition UnquoteAndPrint name (x : term) : TemplateMonad unit :=
     tmPrint y
   end.
 
+  Definition print_rec_options (debug_rec_type debug_rec_term debug_cparam : bool) (m : TestMode) (q : qualid) :=
+    match m with
+    | TestRecType => 
+      if debug_rec_type then printCstType (q ^ "_ind") true else pp_printCstType (q ^ "_ind") true
+    | TestRecTerm => if debug_rec_term then printCstBody (q ^ "_ind") true else pp_printCstBody (q ^ "_ind") true
+    | TestSparseParam  => if debug_cparam then printCstBody  (q ^ "_param1_term") true else pp_printMdecl (q ^ "_param1")
+    | _ => tmMsg ""
+    end.
+
+
+End EnvironmentAccess.
+
 Section TestFunctions.
   Context (debug_uparams debug_strpos : bool).
   Context (m : TestMode).
@@ -178,8 +208,6 @@ Section TestFunctions.
     | Some u => mk_output_univ (tSort u) (relev_sort (tSort u))
     end.
 
-
-
   #[using="All"]
   Definition generate_options {A} (s : A) : TemplateMonad unit :=
     (* 1. Get env and term *)
@@ -190,7 +218,7 @@ Section TestFunctions.
     (* 2. Check and get the mdecl *)
     match hd with
     | tInd (mkInd kname pos_indb) _ =>
-      mdecl <- tmQuoteInductive kname ;;
+      mdecl <- ind_of_kn E kname ;;
       (* 2.1 Compute uniform parameters *)
       nb_uparams <- tmEval cbv (preprocess_uparams kname mdecl E) ;;
       if debug_uparams
@@ -217,7 +245,9 @@ Section TestFunctions.
           mentry <- tmEval all (custom_param kname mdecl nb_uparams strpos_uparams U E Ep) ;;
           if debug_cparam then tmPrint mentry else
           tmMkInductive true mentry ;;
-          pp_printMdecl ((snd kname) ^ "ₛ") ;;
+          fst <- from_opt (nth_error mentry.(mind_entry_inds) 0) ("No inductive declared") ;;
+          ne <- tmQuoteRecTransp ((snd kname) ^ "ₛ") false ;;
+          pp_printMdecl ne.1  ((snd kname) ^ "ₛ") ;;
           knamep <- getKername ((snd kname) ^ "ₛ") ;;
           tmMsg "";;
           (* Test Generation Fundamental Theorem's Type *)
@@ -232,15 +262,6 @@ Section TestFunctions.
       | _ => tmMsg ""
       end
     | _ => tmFail " is not an inductive"
-    end.
-
-
-  Definition print_rec_options (m : TestMode) (q : qualid) :=
-    match m with
-    | TestRecType => if debug_rec_type then printCstType (q ^ "_ind") true else pp_printCstType (q ^ "_ind") true
-    | TestRecTerm => if debug_rec_term then printCstBody (q ^ "_ind") true else pp_printCstBody (q ^ "_ind") true
-    | TestSparseParam  => if debug_cparam then printCstBody  (q ^ "_param1_term") true else pp_printMdecl (q ^ "_param1")
-    | _ => tmMsg ""
     end.
 
 End TestFunctions.
