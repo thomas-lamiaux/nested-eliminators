@@ -200,6 +200,16 @@ Section mk_tFix.
             (get_ind_bodies s kname))
       focus.
 
+  Definition is_rec mdecl :=
+    match mdecl.(ind_finite) with
+    | Finite => true
+    | _ => false
+    end.
+
+  Definition mk_tFix_or_not : bool -> state -> nat -> (state -> keys -> nat -> term) -> term :=
+    fun b s n tmc =>
+    if b then mk_tFix s n tmc else tmc s [] 0.
+
   End mk_tFix.
 
   Definition tFix_default_rarg : state -> kername -> nat -> nat :=

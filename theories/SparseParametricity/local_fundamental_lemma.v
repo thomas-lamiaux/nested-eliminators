@@ -144,7 +144,7 @@ Definition local_fundamental_lemma_term (pos_indb : nat) : term :=
   (* 2. fixpoint *)
   let tFix_type pos_indb := make_return_type s key_uparams key_uparams_preds pos_indb in
   let tFix_rarg := tFix_default_rarg s kname in
-  let* s key_fixs pos_indb := mk_tFix kname tFix_type tFix_rarg s pos_indb in
+  let* s key_fixs pos_indb := mk_tFix_or_not kname tFix_type tFix_rarg (is_rec mdecl) s pos_indb in
   (* 3. closure nuparams + indices + var match *)
   let* s key_nuparams := closure_nuparams tLambda s kname in
   let* s key_indices  := closure_indices  tLambda s kname pos_indb in
