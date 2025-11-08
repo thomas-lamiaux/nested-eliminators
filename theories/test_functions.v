@@ -136,29 +136,6 @@ Definition GetKname : qualid -> TemplateMonad kername :=
   | _ => tmFail (String.append "Error getting kername of " q)
   end.
 
-(* Given an inductive type => returns kname, medecl, kname_param1, kname_param1_term *)
-Definition get_paramEp {A} (s : A) Ep : TemplateMonad unit :=
-  ' (E, tm) <- tmQuoteRec s ;;
-  etm <- tmEval hnf tm ;;
-  let ' (hd, iargs) := decompose_app etm in
-  match hd with
-  | tInd (mkInd kname ind_pos) _ =>
-    mdecl <- ind_of_kn kname;;
-    nb_uparams <- tmEval cbv (preprocess_uparams kname mdecl E) ;;
-    strpos <- tmEval cbv (preprocess_strpos kname mdecl nb_uparams E Ep) ;;
-    type_uparams <- tmEval cbv (firstn nb_uparams (rev (map decl_type mdecl.(ind_params)))) ;;
-    let q := snd kname in
-    cparam_kname <- GetKname (q ^ "ₛ") ;;
-    cparam_kname <- tmEval cbv cparam_kname;;
-    fdt_kname <- GetKname ("lfl_" ^ q ^ "ₛ") ;;
-    fdt_kname <- tmEval cbv fdt_kname;;
-    (* func_kname <- GetKname (q ^ "_func") ;;
-    func_kname <- tmEval cbv func_kname;; *)
-      tmDefinition ("kmp_" ^ q)
-      (mk_one_param_env kname nb_uparams type_uparams strpos cparam_kname fdt_kname) ;;
-      ret tt
-  | _ => tmFail "Not an inductive"
-  end.
 
 
 Definition tmPrintb {A} (b : bool) (a : A) : TemplateMonad unit :=
@@ -191,6 +168,31 @@ Definition UnquoteAndPrint name (x : term) : TemplateMonad unit :=
 
 
 End EnvironmentAccess.
+
+(* Given an inductive type => returns kname, medecl, kname_param1, kname_param1_term *)
+Definition get_paramEp {A} (s : A) Ep : TemplateMonad unit :=
+  ' (E, tm) <- tmQuoteRec s ;;
+  etm <- tmEval hnf tm ;;
+  let ' (hd, iargs) := decompose_app etm in
+  match hd with
+  | tInd (mkInd kname ind_pos) _ =>
+    mdecl <- ind_of_kn E kname;;
+    nb_uparams <- tmEval cbv (preprocess_uparams kname mdecl E) ;;
+    strpos <- tmEval cbv (preprocess_strpos kname mdecl nb_uparams E Ep) ;;
+    type_uparams <- tmEval cbv (firstn nb_uparams (rev (map decl_type mdecl.(ind_params)))) ;;
+    let q := snd kname in
+    cparam_kname <- GetKname (q ^ "ₛ") ;;
+    cparam_kname <- tmEval cbv cparam_kname;;
+    fdt_kname <- GetKname ("lfl_" ^ q ^ "ₛ") ;;
+    fdt_kname <- tmEval cbv fdt_kname;;
+    (* func_kname <- GetKname (q ^ "_func") ;;
+    func_kname <- tmEval cbv func_kname;; *)
+      tmDefinition ("kmp_" ^ q)
+      (mk_one_param_env kname nb_uparams type_uparams strpos cparam_kname fdt_kname) ;;
+      ret tt
+  | _ => tmFail "Not an inductive"
+  end.
+
 
 Section TestFunctions.
   Context (debug_uparams debug_strpos : bool).
@@ -247,7 +249,7 @@ Section TestFunctions.
           tmMkInductive true mentry ;;
           fst <- from_opt (nth_error mentry.(mind_entry_inds) 0) ("No inductive declared") ;;
           ne <- tmQuoteRecTransp ((snd kname) ^ "ₛ") false ;;
-          pp_printMdecl ne.1  ((snd kname) ^ "ₛ") ;;
+          (* pp_printMdecl ne.1  ((snd kname) ^ "ₛ") ;; *)
           knamep <- getKername ((snd kname) ^ "ₛ") ;;
           tmMsg "";;
           (* Test Generation Fundamental Theorem's Type *)
