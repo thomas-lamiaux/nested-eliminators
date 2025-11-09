@@ -183,3 +183,13 @@ Inductive NestedRoseTree : Type :=
 MetaRocq Run (generate_elim Ep "NestedRoseTree_elim" sProp NestedRoseTree).
 Check NestedRoseTree_elim.
 Print NestedRoseTree_elim.
+
+(* Sparse Parametricity for Records *)
+Record foo A := mk_foo {
+  c1 : nat;
+  c2 : A
+}.
+
+MetaRocq Run (generate_sparse_parametricty [] sProp foo).
+
+Print fooₛ.
