@@ -119,7 +119,7 @@ Section CheckArg.
               let free_nuparams_indices := fold_right (fun X t => check_not_free s X &&l t)
                                               default_value nuparams_indices_inst in
             strpos_uparams &&l free_nuparams_indices
-        | None => all_false
+        | None => check_not_free s (mkApps hd iargs)
         end
     | _ => default_value
     end.
