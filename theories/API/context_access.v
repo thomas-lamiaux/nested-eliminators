@@ -184,22 +184,30 @@ Definition isInd (t : term) : bool :=
   recursively compute the inductive structure, 
   otherwise return [t].
 *)
-Fixpoint reduce_inds_fuel n (Σ : global_env) Γ (t : term) : term := 
+Fixpoint reduce_inds_fuel n (Σ : global_env) Γ (t : term) : option term := 
   match n with
-  | 0 => t
+  | 0 => None
   | S n =>
     match reduce_stack default Σ Γ n t [] with
     | Some c' =>
-      let hd := c'.1 in
-      if isInd hd then
-        (map_constr_with_binders Σ (fun Γ t => reduce_inds_fuel n Σ Γ t) Γ (zip c'))
-      else t
-    | None => t
+      match c'.1 with
+      | tInd _ _ => 
+        Some (map_constr_with_binders Σ (fun Γ t => 
+          option_get t (reduce_inds_fuel n Σ Γ t)) Γ (zip c'))
+      | tLambda na a b =>
+        (* Stack must be empty *)
+        match reduce_inds_fuel n Σ (vass na a :: Γ) b with
+        | Some t => Some (tLambda na a t)
+        | None => None
+        end
+      | _ => None
+      end
+    | None => None
     end
   end.
 
 Definition reduce_inds : global_env -> state -> term -> term :=
-  fun E s t => reduce_inds_fuel 5000 E (newc s) t.
+  fun E s t => option_get t (reduce_inds_fuel 5000 E (newc s) t).
 
 Definition reduce_full : global_env -> state -> term -> term :=
   fun E s t =>
