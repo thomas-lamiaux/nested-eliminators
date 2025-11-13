@@ -50,19 +50,18 @@ Print RoseTree_elim.
 
 
 
-
 (* Example 2: typing *)
 Inductive term : Type :=
-| tCase : term -> list term -> term.
+| switch : term -> list term -> term.
 
 Inductive All (A : Type) (P : A -> Prop) : list A -> Prop :=
 | All_nil : All A P []
 | All_cons a l : P a -> All A P l -> All A P (a::l).
 
 Inductive typing : term -> term -> Prop :=
-| typing_tCase (discr ind : term) (branches : list term) (return_type : term) :
+| typing_switch (discr ind : term) (branches : list term) (return_type : term) :
           typing discr ind -> All term (fun a => typing a return_type) branches ->
-          typing (tCase discr branches) return_type.
+          typing (switch discr branches) return_type.
 
 
 (* generate the sparse parametricity and the local fundamental theorem *)
