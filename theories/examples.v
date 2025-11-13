@@ -217,3 +217,111 @@ Check All2iₛ.
 
 MetaRocq Run (generate_sparse_parametricty [] sProp All_local_env).
 Print All_local_envₛ.
+
+From Equations Require Import Equations.
+From MetaRocq.Template Require Typing All.
+Module MetaRocqTyping.
+  Import MetaRocq.Template.Typing MetaRocq.Template.All.
+  Import MRMonadNotation.
+  Unset MetaRocq Strict Unquote Universe Mode.
+
+  Set Elimination Schemes.
+
+  MetaRocq Run (generate_sparse_parametricty [] sProp prod ;; get_paramEp prod []).
+  MetaRocq Run (generate_sparse_parametricty [] sProp list ;; get_paramEp list []).
+  MetaRocq Run (generate_sparse_parametricty [] sProp option ;; get_paramEp option []).
+  (* MetaRocq Run (generate_sparse_parametricty [] sProp mfixpoint ;; get_paramEp mfixpoint []). *)
+  MetaRocq Run (generate_sparse_parametricty [kmp_list] sProp (@All);; get_paramEp (@All) [kmp_list]).
+  MetaRocq Run (generate_sparse_parametricty [kmp_list] sProp (@All2i) ;; get_paramEp (@All2i) [kmp_list]).
+  MetaRocq Run (generate_sparse_parametricty [kmp_list] sProp (@All2) ;; get_paramEp (@All2) [kmp_list]).
+  MetaRocq Run (generate_sparse_parametricty [] sProp sigT ;; get_paramEp (@sigT) []).
+  MetaRocq Run (generate_sparse_parametricty [] sProp (@OnOne2)).
+  MetaRocq Run (generate_sparse_parametricty [] sProp (@context_decl) ;; get_paramEp context_decl []).
+  MetaRocq Run (generate_sparse_parametricty [] sProp (@def) ;; get_paramEp def []).
+  MetaRocq Run (generate_sparse_parametricty [] sProp All_local_env ;; get_paramEp All_local_env []).
+
+  Time MetaRocq Run (generate_elim [kmp_sigT; kmp_list; kmp_prod; kmp_All; kmp_All2; kmp_All2i; kmp_All_local_env; kmp_context_decl; kmp_def] "typing_elim" sProp (@typing)).
+
+About All2_elim.
+About typing_elim.
+(* 
+Lemma all_local_equiv {cf : config.checker_flags} Σ Γ (H0 : wf_local Σ Γ) (P : forall Γ t T, typing Σ Γ t T -> Prop) :
+ All_local_envₛ
+   (fun (Γ0 : context) (j : judgment) =>
+    option_default (fun tm : term => Σ;;; Γ0 |- tm : j_typ j) (j_term j) unit
+    × (∑ s : sort,
+         Σ;;; Γ0 |- j_typ j : tSort s
+         × option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+           isSortRelOpt s (j_rel j)))
+   (fun (Γ0 : context) (j : judgment)
+      (H1 : option_default (fun tm : term => Σ;;; Γ0 |- tm : j_typ j)
+              (j_term j) unit
+            × (∑ s : sort,
+                 Σ;;; Γ0 |- j_typ j : tSort s
+                 × option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+                   isSortRelOpt s (j_rel j))) =>
+    prodₛ
+      (option_default (fun tm : term => Σ;;; Γ0 |- tm : j_typ j) 
+         (j_term j) unit)
+      (fun
+         _ : option_default (fun tm : term => Σ;;; Γ0 |- tm : j_typ j)
+               (j_term j) unit =>
+       True)
+      (∑ s : sort,
+         Σ;;; Γ0 |- j_typ j : tSort s
+         × option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+           isSortRelOpt s (j_rel j))
+      (fun
+         H2 : ∑ s : sort,
+                Σ;;; Γ0 |- j_typ j : tSort s
+                × option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+                  isSortRelOpt s (j_rel j) =>
+       sigTₛ (Sort.t_ nonEmptyLevelExprSet)
+         (fun _ : Sort.t_ nonEmptyLevelExprSet => True)
+         (fun s : sort =>
+          Σ;;; Γ0 |- j_typ j : tSort s
+          × option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+            isSortRelOpt s (j_rel j))
+         (fun (s : sort)
+            (H3 : Σ;;; Γ0 |- j_typ j : tSort s
+                  × option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+                    isSortRelOpt s (j_rel j)) =>
+          prodₛ (Σ;;; Γ0 |- j_typ j : tSort s)
+            (fun H4 : Σ;;; Γ0 |- j_typ j : tSort s =>
+             P Γ0 (j_typ j) (tSort s) H4)
+            (option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+             isSortRelOpt s (j_rel j))
+            (fun
+               _ : option_default (fun u0 : sort => u0 = s) (j_univ j) True /\
+                   isSortRelOpt s (j_rel j) =>
+             True)
+            H3)
+         H2)
+      H1)
+   Γ H0 ->
+   squash (All_local_env_over (typing Σ) (fun Γ _ t T tyT => P Γ t T tyT) Γ H0).
+Proof.
+  induction 1; sq.
+  - constructor.
+  - constructor; eauto.
+    destruct X0; cbn in o.
+    destruct s as [s [hs []]].
+    depelim H0.
+    depelim H2. cbn.
+    depelim H2. exact H2.
+  - Print All_local_env_over_sorting.
+    constructor. auto.
+    destruct X0; cbn in o.
+    destruct s as [s [hs []]]. cbn. Print option_default.
+    depelim H0.
+    depelim H1. cbn.
+    2:{ depelim H0. depelim H1. depelim H2. cbn. exact H2. }
+    cbn in H2. depelim H2.
+    cbn in H2. red in o1. cbn in o1. Print judgment_.
+    admit.
+  - 
+
+
+
+*)
+End MetaRocqTyping.
