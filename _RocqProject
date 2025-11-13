@@ -5,6 +5,7 @@
 formalization/Lemma.v
 formalization/Positivity_condition.v
 formalization/Nested_to_mutual.v
+formalization/Nested_to_mutual_proof.v
 formalization/RoseTree.v
 formalization/typing.v
 
