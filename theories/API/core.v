@@ -36,8 +36,6 @@ Definition find_errori {A} (p : A -> bool) (l : list A) (default : A) : nat * A 
 
 (*
 
-This interface is inspired from work by Weituo DAI, and Yannick Forester
-
 #############################
 ###      Constrains       ###
 #############################
